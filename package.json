@@ -1,0 +1,54 @@
+{
+  "name": "colyseus-mobx",
+  "version": "0.0.1",
+  "description": "Generates Colyseus schemas, builds/starts webpack, starts game server and serves game client.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run schemas && npm run server:dev",
+    "start": "npm run start:prod",
+    "start:prod": "npm run build:prod && npm run server:prod",
+    "start:dev": "npm run build:dev && npm run server:dev",
+    "server": "npm run server:prod",
+    "server:prod": "ts-node index.ts --env prod",
+    "server:dev": "node --inspect -r ts-node/register index.ts --env dev",
+    "build": "npm run build:prod",
+    "build:prod": "npm run schemas && webpack --env prod",
+    "build:dev": "npm run schemas && webpack --env dev",
+    "schemas": "npx schema-codegen index.ts --ts --output client/src/schemas"
+  },
+  "author": "a-rts <artis@artis.dev>",
+  "engines": {
+    "node": "^14"
+  },
+  "devDependencies": {
+    "@colyseus/loadtest": "^0.12.0",
+    "@types/cors": "^2.8.6",
+    "@types/express": "^4.17.1",
+    "@types/express-rate-limit": "^5.0.0",
+    "@types/webpack": "^4.41.12",
+    "@types/webpack-dev-middleware": "^3.7.0",
+    "@types/webpack-dev-server": "^3.10.1",
+    "@types/webpack-merge": "^4.1.5",
+    "html-webpack-plugin": "^4.3.0",
+    "raw-loader": "^4.0.1",
+    "ts-loader": "^7.0.2",
+    "ts-node": "^8.1.0",
+    "typescript": "^3.4.5",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-middleware": "^3.7.2",
+    "webpack-dev-server": "^3.10.3",
+    "webpack-merge": "^4.2.2"
+  },
+  "dependencies": {
+    "@colyseus/monitor": "^0.12.2",
+    "@colyseus/social": "^0.10.9",
+    "@types/commander": "^2.12.2",
+    "colyseus": "^0.13.0",
+    "commander": "^5.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.16.4",
+    "express-jwt": "^5.3.1",
+    "express-rate-limit": "^5.1.3"
+  }
+}

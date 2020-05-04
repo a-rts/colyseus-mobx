@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "outDir": "lib",
+    "target": "es6",
+    "module": "commonjs",
+    "strict": true,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "jsx": "react"
+
+    // From create-react-app.
+    // "lib": ["dom", "dom.iterable", "esnext"]
+    // "allowJs": true,
+    // "skipLibCheck": true,
+    // "allowSyntheticDefaultImports": true,
+    // "forceConsistentCasingInFileNames": true,
+    // "moduleResolution": "node",
+    // "resolveJsonModule": true
+    // "isolatedModules": true,
+    // "noEmit": true
+  },
+  "include": ["./src/**/*"]
+}
