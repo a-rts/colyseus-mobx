@@ -1,9 +1,15 @@
 import { Room, Client } from "colyseus";
 import { Schema, type } from "@colyseus/schema";
 
+export class DeepState extends Schema {
+  @type("string")
+  counter: string;
+}
 export class GameState extends Schema {
   @type("uint8")
   counter: number;
+  @type(DeepState)
+  deep = new DeepState();
 }
 
 /**
@@ -23,6 +29,7 @@ export default class Game extends Room<GameState> {
       } else {
         this.state.counter++;
       }
+      this.state.deep.counter = 'deeeep: '+ this.state.counter
     }, 1000);
   }
 

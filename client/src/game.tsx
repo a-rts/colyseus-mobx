@@ -1,18 +1,10 @@
+import { Schema } from "@colyseus/schema";
+import { Client, Room } from "colyseus.js";
+import { decorate, observable, runInAction, when } from "mobx";
+import { observer } from "mobx-react";
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
-import { Client, Room } from "colyseus.js";
-import { DataChange } from "@colyseus/schema";
 import { GameState } from "./schemas/GameState";
-import {
-  observable,
-  action,
-  runInAction,
-  extendObservable,
-  autorun,
-  when,
-  decorate,
-} from "mobx";
-import { observer } from "mobx-react";
 
 // Trying to apply the decorator to the GameState class constructor from here.
 // NOTE Does not work.
@@ -24,6 +16,7 @@ decorate(GameState, {
 
 const game = observable({
   room: null as null | Room<GameState>,
+  state: {} as GameState,
 });
 
 const client = new Client();
@@ -33,6 +26,26 @@ async function joinGame() {
   game.room = room;
 }
 
+function wireChanges<T>(colyseusState:Schema & T, shadowState: T){
+  colyseusState.onChange = (changes) => {
+    for (const change of changes) {
+      const field = change.field as keyof T;
+      const value = colyseusState[field];
+      if (value instanceof Schema){ // TODO make more robust guard
+        if (!shadowState[field]){
+          runInAction(() => {
+            shadowState[field] = {...value};
+          });
+          wireChanges(value, shadowState[field]);
+        }
+      } else {
+        runInAction(() => {
+          shadowState[field] = value;
+        });
+      }
+    }
+    };
+}
 joinGame();
 
 // Use MobX to start watching for server state changes
@@ -50,18 +63,19 @@ when(
       ).innerText = game.room.state.counter.toString();
     }, 1000);
 
-    game.room.state.onChange = (changes: DataChange[]) => {
-      for (const change of changes) {
-        if (change.field === "counter") {
-          // Just increment the counter OUTSIDE the Game component below.
-          // If this counter was tracked within the Game component,
-          // MobX would re-render the component because of this onChange
-          // and it would falsely appear as if MobX is detecting
-          // when game.room.state.counter changes.
-          document.getElementById("counter").innerText = change.value;
-        }
-      }
-    };
+    // game.room.state.onChange = (changes: DataChange[]) => {
+    //   for (const change of changes) {
+    //     if (change.field === "counter") {
+    //       // Just increment the counter OUTSIDE the Game component below.
+    //       // If this counter was tracked within the Game component,
+    //       // MobX would re-render the component because of this onChange
+    //       // and it would falsely appear as if MobX is detecting
+    //       // when game.room.state.counter changes.
+    //       document.getElementById("counter").innerText = change.value;
+    //     }
+    //   }
+    // };
+    wireChanges(game.room.state, game.state);
   }
 );
 
@@ -92,8 +106,8 @@ class Game extends Component {
       <div>
         <div>game.room is null: {game.room === null ? "yes" : "no"}</div>
         <div>
-          game.room.state.counter:{" "}
-          {game.room === null ? "not joined" : game.room.state.counter}
+          game.state:{' '}
+          {JSON.stringify(game.state, null, 2)}
         </div>
       </div>
     );

@@ -6,9 +6,8 @@
 // 
 
 import { Schema, type, ArraySchema, MapSchema, DataChange } from "@colyseus/schema";
-import { DeepState } from "./DeepState"
 
-export class GameState extends Schema {
-    @type("uint8") public counter: number;
-    @type(DeepState) public deep: DeepState = new DeepState();
+
+export class DeepState extends Schema {
+    @type("string") public counter: string;
 }
