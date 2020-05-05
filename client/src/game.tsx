@@ -1,20 +1,10 @@
+import { Schema } from "@colyseus/schema";
+import { Client, Room } from "colyseus.js";
+import { decorate, observable, runInAction, when } from "mobx";
+import { observer } from "mobx-react";
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
-import { Client, Room } from "colyseus.js";
-import { DataChange, Schema } from "@colyseus/schema";
 import { GameState } from "./schemas/GameState";
-import {
-  observable,
-  action,
-  runInAction,
-  extendObservable,
-  autorun,
-  when,
-  decorate,
-  IObservableObject,
-} from "mobx";
-import { observer } from "mobx-react";
-import e from "express";
 
 // Trying to apply the decorator to the GameState class constructor from here.
 // NOTE Does not work.
