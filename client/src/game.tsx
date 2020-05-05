@@ -36,8 +36,8 @@ function wireChanges<T>(colyseusState:Schema & T, shadowState: T){
           runInAction(() => {
             shadowState[field] = {...value};
           });
+          wireChanges(value, shadowState[field]);
         }
-        wireChanges(value, shadowState[field]);
       } else {
         runInAction(() => {
           shadowState[field] = value;
