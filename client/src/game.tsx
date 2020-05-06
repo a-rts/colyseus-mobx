@@ -1,4 +1,4 @@
-import { Schema } from "@colyseus/schema";
+import { Schema, ArraySchema, MapSchema } from "@colyseus/schema";
 import { Client, Room } from "colyseus.js";
 import { decorate, observable, runInAction, when } from "mobx";
 import { observer } from "mobx-react";
@@ -26,25 +26,64 @@ async function joinGame() {
   game.room = room;
 }
 
-function wireChanges<T>(colyseusState:Schema & T, shadowState: T){
+function wireChanges<T>(colyseusState: Schema & T, shadowState: T) {
   colyseusState.onChange = (changes) => {
     for (const change of changes) {
       const field = change.field as keyof T;
       const value = colyseusState[field];
-      if (value instanceof Schema){ // TODO make more robust guard
-        if (!shadowState[field]){
+      if (value instanceof Schema) {
+        // TODO make more robust guard
+        if (!shadowState[field]) {
           runInAction(() => {
-            shadowState[field] = {...value};
+            shadowState[field] = { ...value };
           });
           wireChanges(value, shadowState[field]);
         }
+      } else if (value instanceof ArraySchema) {
+        // TODO The onAdd and onRemove functions are the same as for MapSchema
+        //  but shadowState[field] must be [].
+        // TODO Test having Schema/ArraySchema/MapSchema within ArraySchema.
+      } else if (value instanceof MapSchema) {
+        // TODO After joining, the map could already have values (see when reloading).
+        if (!shadowState[field]) {
+          // TODO Probably shadowState[field] needs to have an index signature
+          //  of string to the generic type in the MapSchema<T> value?
+          //  If so, then the type of val within the map should be the T.
+          // shadowState[field] = {} as {
+          //   [k in keyof typeof value]: any;
+          // };
+          // shadowState[field] = {} as { [k: string]: any };
+          // shadowState[field] = {} as typeof value;
+          shadowState[field] = {} as typeof value;
+          value.onAdd = (val, key) => {
+            runInAction(() => {
+              // todo key must be string
+              // todo val
+              // @ts-ignore
+              shadowState[field][key] = val as any;
+            });
+            // TODO Probably need to refactor the top of the type check from
+            //  `instanceof Schema` into a function to run on the element value?
+            // @ts-ignore
+            if (shadowState[field][key] instanceof Schema) {
+              // @ts-ignore
+              wireChanges(value, shadowState[field][key]);
+            }
+          };
+          value.onRemove = (val, key) => {
+            // @ts-ignore
+            delete shadowState[field][key];
+          };
+        }
+        value.triggerAll(); // Do not miss the first element.
+        // TODO Test having Schema/ArraySchema/MapSchema within MapSchema.
       } else {
         runInAction(() => {
           shadowState[field] = value;
         });
       }
     }
-    };
+  };
 }
 joinGame();
 
@@ -58,9 +97,16 @@ when(
     // This proves that `game.room.state.counter` is synced and there might
     // be a possibility to also make it observable for MobX.
     setInterval(() => {
-      document.getElementById(
-        "interval-counter"
-      ).innerText = game.room.state.counter.toString();
+      document.getElementById("interval-state").innerText = JSON.stringify(
+        game.room.state.numbers,
+        null,
+        2
+      );
+      document.getElementById("interval-state").innerText += JSON.stringify(
+        game.room.state.map,
+        null,
+        2
+      );
     }, 1000);
 
     // game.room.state.onChange = (changes: DataChange[]) => {
@@ -103,13 +149,10 @@ when(
 class Game extends Component {
   render() {
     return (
-      <div>
+      <pre>
         <div>game.room is null: {game.room === null ? "yes" : "no"}</div>
-        <div>
-          game.state:{' '}
-          {JSON.stringify(game.state, null, 2)}
-        </div>
-      </div>
+        <div>game.state: {JSON.stringify(game.state, null, 2)}</div>
+      </pre>
     );
   }
 }

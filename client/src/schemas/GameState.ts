@@ -11,4 +11,6 @@ import { DeepState } from "./DeepState"
 export class GameState extends Schema {
     @type("uint8") public counter: number;
     @type(DeepState) public deep: DeepState = new DeepState();
+    @type([ "uint8" ]) public numbers: ArraySchema<number> = new ArraySchema<number>();
+    @type({ map: "uint8" }) public map: MapSchema<number> = new MapSchema<number>();
 }
