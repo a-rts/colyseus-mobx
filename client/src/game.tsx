@@ -26,61 +26,62 @@ async function joinGame() {
   game.room = room;
 }
 
-function wireChanges<T>(colyseusState: Schema & T, shadowState: T) {
+function setValue<T, K extends keyof T>(getValue: ()=> T[K], shadowState: T, field: K) {
+  const value = getValue();
+  if (value instanceof Schema) {
+    // TODO make more robust guard
+    if (!shadowState[field]) {
+      runInAction(() => {
+        shadowState[field] = { ...value};
+      });
+      wireSchemaChanges(getValue as any, shadowState[field]);
+    }
+  } else if (value instanceof ArraySchema) {
+    // TODO The onAdd and onRemove functions are the same as for MapSchema
+    //  but shadowState[field] must be [].
+    // TODO Test having Schema/ArraySchema/MapSchema within ArraySchema.
+  } else if (value instanceof MapSchema) {
+    if (!shadowState[field]) {
+      runInAction(() => {
+        shadowState[field] = { ...value }; 
+      });
+      wireMapChanges(getValue as any, shadowState[field]);
+    }
+    value.triggerAll(); // Do not miss the first element. 
+    // TODO Test having Schema/ArraySchema/MapSchema within MapSchema.
+  } else { //primitive value
+    runInAction(() => {
+      shadowState[field] = value;
+    });
+  }
+}
+
+function wireMapChanges<T>(getColyseusState: () => (MapSchema & T), shadowState: T) {
+  const colyseusState = getColyseusState();
+  colyseusState.onAdd = (_, k) => {
+    const key = k as keyof T;
+    setValue(() => getColyseusState()[key], shadowState, key);
+  };
+  colyseusState.onChange = (_, k) => {
+    // maybe not an actual change in direct value? need to test with Schema value
+    const key = k as keyof T;
+    setValue(() => getColyseusState()[key], shadowState, key);
+  };
+  colyseusState.onRemove = (_, k) => {
+    const key = k as keyof T;
+    delete shadowState[key];
+  };
+}
+
+function wireSchemaChanges<T>(getColyseusState:  () => (Schema & T), shadowState: T) {
+  const colyseusState = getColyseusState();
   colyseusState.onChange = (changes) => {
     for (const change of changes) {
       const field = change.field as keyof T;
-      const value = colyseusState[field];
-      if (value instanceof Schema) {
-        // TODO make more robust guard
-        if (!shadowState[field]) {
-          runInAction(() => {
-            shadowState[field] = { ...value };
-          });
-          wireChanges(value, shadowState[field]);
-        }
-      } else if (value instanceof ArraySchema) {
-        // TODO The onAdd and onRemove functions are the same as for MapSchema
-        //  but shadowState[field] must be [].
-        // TODO Test having Schema/ArraySchema/MapSchema within ArraySchema.
-      } else if (value instanceof MapSchema) {
-        // TODO After joining, the map could already have values (see when reloading).
-        if (!shadowState[field]) {
-          // TODO Probably shadowState[field] needs to have an index signature
-          //  of string to the generic type in the MapSchema<T> value?
-          //  If so, then the type of val within the map should be the T.
-          // shadowState[field] = {} as {
-          //   [k in keyof typeof value]: any;
-          // };
-          // shadowState[field] = {} as { [k: string]: any };
-          // shadowState[field] = {} as typeof value;
-          shadowState[field] = {} as typeof value;
-          value.onAdd = (val, key) => {
-            runInAction(() => {
-              // todo key must be string
-              // todo val
-              // @ts-ignore
-              shadowState[field][key] = val as any;
-            });
-            // TODO Probably need to refactor the top of the type check from
-            //  `instanceof Schema` into a function to run on the element value?
-            // @ts-ignore
-            if (shadowState[field][key] instanceof Schema) {
-              // @ts-ignore
-              wireChanges(value, shadowState[field][key]);
-            }
-          };
-          value.onRemove = (val, key) => {
-            // @ts-ignore
-            delete shadowState[field][key];
-          };
-        }
-        value.triggerAll(); // Do not miss the first element.
-        // TODO Test having Schema/ArraySchema/MapSchema within MapSchema.
+      if (getColyseusState()[field] === undefined){
+        delete shadowState[field];
       } else {
-        runInAction(() => {
-          shadowState[field] = value;
-        });
+        setValue(() => getColyseusState()[field], shadowState, field);
       }
     }
   };
@@ -121,7 +122,7 @@ when(
     //     }
     //   }
     // };
-    wireChanges(game.room.state, game.state);
+    wireSchemaChanges(() => game.room.state, game.state);
   }
 );
 
