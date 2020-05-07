@@ -112,20 +112,22 @@ when(
   () => game.room !== null,
   // Runs once when triggered to set the onChange event only once.
   () => {
+    // return; // TODO The code above works only if this function is allowed to run!
+
     // This proves that `game.room.state.counter` is synced and there might
     // be a possibility to also make it observable for MobX.
     setInterval(() => {
       document.getElementById("interval-state").innerText = JSON.stringify(
-        game.room.state.numbers,
+        game.room.state.arrayMaps,
         null,
         2
       );
       document.getElementById("interval-state").innerText += JSON.stringify(
-        game.room.state.map,
+        game.room.state.mapArrays,
         null,
         2
       );
-    }, 1000);
+    }, 2000);
 
     // game.room.state.onChange = (changes: DataChange[]) => {
     //   for (const change of changes) {

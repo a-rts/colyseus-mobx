@@ -7,10 +7,12 @@
 
 import { Schema, type, ArraySchema, MapSchema, DataChange } from "@colyseus/schema";
 import { DeepState } from "./DeepState"
+import { MapState } from "./MapState"
+import { ArrayState } from "./ArrayState"
 
 export class GameState extends Schema {
     @type("uint8") public counter: number;
     @type(DeepState) public deep: DeepState = new DeepState();
-    @type([ "uint8" ]) public numbers: ArraySchema<number> = new ArraySchema<number>();
-    @type({ map: "uint8" }) public map: MapSchema<number> = new MapSchema<number>();
+    @type([ MapState ]) public arrayMaps: ArraySchema<MapState> = new ArraySchema<MapState>();
+    @type({ map: ArrayState }) public mapArrays: MapSchema<ArrayState> = new MapSchema<ArrayState>();
 }
